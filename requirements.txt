@@ -1,0 +1,5 @@
+# Dependencies for download_vantor_event.py
+#
+# The download/--list features use only the Python standard library.
+# shapely is required ONLY for the --pairs mode (pre/post footprint overlap).
+shapely>=2.0

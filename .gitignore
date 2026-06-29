@@ -1,0 +1,20 @@
+# Downloaded imagery (large; fetched via download_vantor_event.py)
+/venezuela/
+# Any event output folders created with the default -o (./<event-name>/)
+/*-*-*/
+
+# Generated pairing tables
+*_pairs.csv
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
