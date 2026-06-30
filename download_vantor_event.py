@@ -23,6 +23,9 @@ Download the 3 smallest scenes (good for a quick test):
 Download 5 scenes into a specific folder, largest first:
     python download_vantor_event.py --limit 5 --order largest -o ./venezuela
 
+Download specific scenes by ID (use --list to find IDs):
+    python download_vantor_event.py --scene B130001101BE2A00 B110001100BB2210 -o ./venezuela
+
 Download only the metadata + thumbnails (skip the giant .tif files):
     python download_vantor_event.py --limit 10 --skip-ext tif
 
@@ -297,6 +300,15 @@ def main():
     )
     p.add_argument("--event", default=DEFAULT_EVENT, help=f"event name (default: {DEFAULT_EVENT})")
     p.add_argument("--limit", type=int, default=3, help="number of scenes to download (default: 3)")
+    p.add_argument(
+        "--scene",
+        action="extend",
+        nargs="+",
+        default=[],
+        metavar="ID",
+        help="download exactly these scene ID(s); overrides --order/--limit/--phase. "
+             "Repeatable and space-separated. Use --list to find IDs.",
+    )
     p.add_argument("-o", "--output", default=None, help="output directory (default: ./<event>)")
     p.add_argument(
         "--order",
@@ -353,7 +365,19 @@ def main():
     total = sum(tif_size(s) for s in scenes)
     print(f"Found {len(scenes)} scenes, {human(total)} total (.tif).\n")
 
-    if args.phase != "any" and not args.pairs:
+    if args.scene and not args.pairs:
+        unknown = [s for s in args.scene if s not in scenes]
+        if unknown:
+            print(f"WARNING: ignoring unknown scene id(s): {', '.join(unknown)}")
+        # Preserve the order the user requested; drop duplicates.
+        seen = set()
+        ids = [s for s in args.scene if s in scenes and not (s in seen or seen.add(s))]
+        if not ids:
+            sys.exit("No valid scene IDs given. Run with --list to see available IDs.")
+        if args.phase != "any":
+            print("NOTE: --phase ignored because --scene was given.")
+        print(f"Selected {len(ids)} scene(s) by ID.\n")
+    elif args.phase != "any" and not args.pairs:
         print(f"Filtering to phase = {args.phase} ...")
         ids = [sid for sid in ids if fetch_metadata(scenes[sid]["json"][0])[0] == args.phase]
         print(f"{len(ids)} scene(s) match phase = {args.phase}.\n")
@@ -400,7 +424,7 @@ def main():
         print("Use --limit N to download (smallest .tif first; --order to change).")
         return
 
-    selected = ids[: args.limit]
+    selected = ids if args.scene else ids[: args.limit]
     sel_bytes = sum(
         sz for sid in selected for ext, (_, sz) in scenes[sid].items() if ext not in args.skip_ext
     )

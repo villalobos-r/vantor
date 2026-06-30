@@ -31,6 +31,8 @@ Vantor Open Data Program and be able to show **the same area before (pre) and af
 
 - `download_vantor_event.py` — discover / list / download / pair. Stdlib only,
   except `--pairs` needs shapely.
+  - `--scene ID [ID ...]` downloads exactly those scene IDs (overrides
+    `--order`/`--limit`/`--phase`) — for hand-picking coverage instead of all 49.
 - `crop_hd.py` — **separate** tool: extract a full-resolution HD crop centered on a
   lon/lat from a downloaded `.tif`. Stdlib only, but shells out to GDAL
   (`gdal_translate`/`gdalinfo`) — needs GDAL on PATH (OSGeo4W Shell).
@@ -70,11 +72,14 @@ Design decisions (per user):
 1. On the other machine: `pip install -r requirements.txt` (+ have QGIS/OSGeo4W for GDAL).
 2. Run `python download_vantor_event.py --pairs` to generate
    `Venezuela-Earthquake-Jun-2026_pairs.csv`.
-3. Run the full download: `python download_vantor_event.py --limit 49 -o ./venezuela`
-   (resumable — safe to re-run if interrupted). Budget ~365 GB of disk.
+3. Pick the scenes covering the area of interest (use `--list` / the pairs CSV to find
+   IDs — the full 365 GB is more than needed), then download just those:
+   `python download_vantor_event.py --scene <ID> <ID> ... -o ./venezuela`
+   (resumable — safe to re-run if interrupted). Full download is `--limit 49`.
 4. Use `crop_hd.py` (from the OSGeo4W Shell) to make HD crops of areas of interest.
-5. (Optional, not built) Batch crop mode (CSV of name,lat,lon → many crops); add
-   `eo:cloud_cover` columns to the pairing CSV; clip/align matched pre/post COGs.
+5. (Optional, not built) `--bbox` area selector for the downloader; batch crop mode
+   (CSV of name,lat,lon → many crops); `eo:cloud_cover` columns in the pairing CSV;
+   clip/align matched pre/post COGs.
 
 ## Quick reference
 

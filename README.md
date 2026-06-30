@@ -81,6 +81,7 @@ pip install -r requirements.txt
 |------|---------|-------------|
 | `--event NAME` | `Venezuela-Earthquake-Jun-2026` | Event/collection to operate on. Other events exist in the same bucket (e.g. `DRC-Ebola-May-2026`). |
 | `--limit N` | `3` | Number of scenes to download. |
+| `--scene ID [ID ...]` | (none) | Download **exactly** these scene ID(s). Overrides `--order`/`--limit`/`--phase`. Space-separated and repeatable. Unknown IDs are warned and skipped. Use `--list` to find IDs. |
 | `-o`, `--output DIR` | `./<event>` | Output directory. Created if missing. |
 | `--order {smallest,largest,name}` | `smallest` | Which scenes to pick first. `smallest`/`largest` sort by `.tif` size; `name` sorts by scene ID. |
 | `--phase {pre,post,any}` | `any` | Restrict to before-event (`pre`), after-event (`post`), or all scenes. Applies to `--list` and downloads. |
@@ -102,6 +103,9 @@ python download_vantor_event.py --phase pre --list
 
 # Download the smallest pre scene (full trio)
 python download_vantor_event.py --phase pre --order smallest --limit 1 -o ./venezuela
+
+# Download specific scenes by ID (hand-pick coverage; use --list to find IDs)
+python download_vantor_event.py --scene B130001101BE2A00 B110001100BB2210 -o ./venezuela
 
 # Download EVERYTHING (35 scenes, ~260 GB, serial, full trios)
 python download_vantor_event.py --limit 35 -o ./venezuela
