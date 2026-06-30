@@ -1,8 +1,8 @@
 # Vantor Open Data — Venezuela Earthquake (Jun 2026) Toolkit
 
-Tooling to browse, download, and pre/post-match high-resolution satellite imagery
-from the **Vantor Open Data Program** (Vantor = the rebranded Maxar Intelligence),
-focused on the **Venezuela-Earthquake-Jun-2026** event.
+Tooling to browse, download, pre/post-match, and crop high-resolution satellite
+imagery from the **Vantor Open Data Program** (Vantor = the rebranded Maxar
+Intelligence), focused on the **Venezuela-Earthquake-Jun-2026** event.
 
 The data is a public, anonymous-access STAC catalog hosted on S3:
 <https://vantor-opendata.s3.amazonaws.com/> — no AWS account or credentials needed.
@@ -40,6 +40,10 @@ does this and writes a CSV (see section 5).
 
 - **Python 3** (standard library only for download/list).
 - **shapely** — required **only** for `--pairs` (footprint overlap math).
+- **GDAL** (`gdal_translate`, `gdalinfo`) — required **only** for `crop_hd.py`
+  (HD crops). It ships with **QGIS / OSGeo4W**; the simplest way is to run
+  `crop_hd.py` from the **OSGeo4W Shell**. On Windows it also auto-detects a
+  standard `C:\OSGeo4W\bin` install. (Not a pip package; not in requirements.txt.)
 
 ```bash
 pip install -r requirements.txt
@@ -153,11 +157,74 @@ by latitude.
 
 ---
 
-## 6. Files in this repo
+## 6. Creating HD crops — `crop_hd.py`
+
+The scene `.tif`s are ~1 gigapixel (e.g. **33,430 × 32,222 px at ~0.35 m/pixel**) —
+far too large for a normal image viewer. `crop_hd.py` is a **separate tool** (not
+part of the downloader) that extracts a small, full-resolution window centered on a
+coordinate you choose and writes an ordinary JPG/PNG. This is a real "zoom in" at
+native detail — you can see individual buildings, streets, and vehicles — as opposed
+to a downsample of the whole scene (which would just duplicate the bundled `.jpg`).
+
+Needs **GDAL** on PATH (see section 2). Run it from the **OSGeo4W Shell**.
+
+### Specifying the center
+
+Two interchangeable ways — use whichever matches how you obtained the coordinate:
+
+| Option | Order | Example | When |
+|--------|-------|---------|------|
+| `--latlon "LAT,LON"` | lat,lon | `--latlon "10.6115633,-66.8431920"` | Paste straight from Google Maps / QGIS (their copy format). **Keep the quotes.** |
+| `--center LON LAT` | lon lat | `--center -66.8431920 10.6115633` | GIS convention, space-separated. |
+
+Full decimal precision is used as-is — more decimals just means a more exact point.
+**Tip:** in QGIS, the cursor lon/lat shows in the status bar; or right-click → copy
+coordinate.
+
+### Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `tif` (positional) | — | Path to a downloaded scene `.tif`. |
+| `--latlon "LAT,LON"` | — | Center, as copied from Google Maps/QGIS. Mutually exclusive with `--center`. |
+| `--center LON LAT` | — | Center in GIS order. Mutually exclusive with `--latlon`. |
+| `--size W H` | `1920 1080` | Output image size in pixels. |
+| `--scale S` | `1.0` | Source pixels per output pixel. `1` = native detail; `>1` = more ground (zoom out); `<1` = extra zoom (upsampled). |
+| `-o`, `--output PATH` | `<tif>_<lon>_<lat>.<fmt>` | Output image path. |
+| `--format {jpg,png}` | `jpg` | Output format. |
+| `--quality N` | `90` | JPEG quality (1–100). |
+
+At native scale (`--scale 1`) and ~0.35 m/pixel, a `1920 × 1080` crop covers roughly
+**680 m × 380 m** on the ground.
+
+### Examples
+
+```bash
+# HD crop centered on a pasted Google Maps coordinate (1920x1080, native detail)
+python crop_hd.py venezuela/B130001101BE2A00.tif --latlon "10.6115633,-66.8431920"
+
+# Larger output (2560x1440)
+python crop_hd.py venezuela/B130001101BE2A00.tif --latlon "10.6115633,-66.8431920" --size 2560 1440
+
+# Zoom OUT to see ~4x more ground (downsampled)
+python crop_hd.py venezuela/B130001101BE2A00.tif --latlon "10.6115633,-66.8431920" --scale 4
+
+# PNG with a chosen output name
+python crop_hd.py venezuela/B130001101BE2A00.tif --center -66.8432 10.6116 --format png -o neighborhood.png
+```
+
+The tool prints the scene size, m/pixel, the source window, and the ground coverage
+before writing. If the center falls **outside** the scene footprint it warns and
+prints the scene's lon/lat bounds; if the window hits an edge it shifts to stay inside.
+
+---
+
+## 7. Files in this repo
 
 | File | Purpose |
 |------|---------|
 | `download_vantor_event.py` | The browse / download / pairing tool. |
+| `crop_hd.py` | Extract a full-resolution HD crop centered on a lon/lat from a downloaded `.tif` (needs GDAL). |
 | `requirements.txt` | Python dependencies (shapely, for `--pairs`). |
 | `README.md` | This file. |
 | `CONTEXT.md` | Working notes / state for resuming the task on another machine. |
